@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../models/enums/auth_mode.dart';
 import '../models/http_exception.dart';
 
 class Auth with ChangeNotifier {
@@ -13,6 +14,9 @@ class Auth with ChangeNotifier {
   String _userId;
   static const _apiKey = 'AIzaSyAEU6xGslER3YDz92fdikzplLvuz9glOAc';
   Timer _authTimer;
+  AuthMode _currentAuthMode = AuthMode.Login;
+
+  bool appRan = false;
 
   bool get isAuth {
     return token != null;
@@ -29,6 +33,17 @@ class Auth with ChangeNotifier {
 
   String get userId {
     return _userId;
+  }
+
+  AuthMode get currentAuthMode {
+    return _currentAuthMode;
+  }
+
+  void setAuthMode(AuthMode authMode) {
+    if (_currentAuthMode != authMode) {
+      _currentAuthMode = authMode;
+      notifyListeners();
+    }
   }
 
   Future<void> signup(String email, String password) async {
@@ -115,13 +130,15 @@ class Auth with ChangeNotifier {
 
   Future<bool> tryAutoLogin() async {
     final prefs = await SharedPreferences.getInstance();
-    if(!prefs.containsKey('userData')) {
+    appRan = true;
+    if (!prefs.containsKey('userData')) {
       return false;
     }
-    final extractedUserData = json.decode(prefs.getString('userData')) as Map<String, Object>;
+    final extractedUserData =
+        json.decode(prefs.getString('userData')) as Map<String, Object>;
     final expiryDate = DateTime.parse(extractedUserData['expiryDate']);
 
-    if(expiryDate.isBefore(DateTime.now())) {
+    if (expiryDate.isBefore(DateTime.now())) {
       return false;
     }
     _token = extractedUserData['token'];
@@ -130,7 +147,7 @@ class Auth with ChangeNotifier {
     notifyListeners();
     _autologout();
     return true;
-   }
+  }
 
   Future<void> logout() async {
     _token = _userId = _expiryDate = null;
