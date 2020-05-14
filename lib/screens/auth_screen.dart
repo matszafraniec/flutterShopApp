@@ -13,10 +13,8 @@ class AuthScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final deviceSize = MediaQuery.of(context).size;
-    // final transformConfig = Matrix4.rotationZ(-8 * pi / 180);
-    // transformConfig.translate(-10.0);
+
     return Scaffold(
-      // resizeToAvoidBottomInset: false,
       body: Stack(
         children: <Widget>[
           Consumer<Auth>(
@@ -104,7 +102,8 @@ class AuthCard extends StatefulWidget {
   _AuthCardState createState() => _AuthCardState();
 }
 
-class _AuthCardState extends State<AuthCard> {
+class _AuthCardState extends State<AuthCard>
+    with SingleTickerProviderStateMixin {
   final GlobalKey<FormState> _formKey = GlobalKey();
   Map<String, String> _authData = {
     'email': '',
@@ -112,6 +111,32 @@ class _AuthCardState extends State<AuthCard> {
   };
   var _isLoading = false;
   final _passwordController = TextEditingController();
+  AnimationController _controller;
+  Animation<Size> _heightAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+
+    _controller = AnimationController(
+      vsync: this,
+      duration: Duration(milliseconds: 300),
+    );
+    _heightAnimation = Tween<Size>(
+            begin: Size(double.infinity, 260), end: Size(double.infinity, 360))
+        .animate(CurvedAnimation(
+      parent: _controller,
+      curve: Curves.linear,
+    ));
+    _heightAnimation.addListener(() => setState(() {}));
+  }
+
+  @override
+  void dispose() {
+    // TODO: implement dispose
+    super.dispose();
+    _controller.dispose();
+  }
 
   void _showErrorDialog(String message) {
     showDialog(
@@ -141,7 +166,8 @@ class _AuthCardState extends State<AuthCard> {
       _isLoading = true;
     });
     try {
-      if (Provider.of<Auth>(context, listen: false).currentAuthMode == AuthMode.Login) {
+      if (Provider.of<Auth>(context, listen: false).currentAuthMode ==
+          AuthMode.Login) {
         // Log user in
         await Provider.of<Auth>(context, listen: false).login(
           _authData['email'],
@@ -181,18 +207,6 @@ class _AuthCardState extends State<AuthCard> {
     });
   }
 
-  // void _switchAuthMode() {
-  //   if (_authMode == AuthMode.Login) {
-  //     setState(() {
-  //       _authMode = AuthMode.Signup;
-  //     });
-  //   } else {
-  //     setState(() {
-  //       _authMode = AuthMode.Login;
-  //     });
-  //   }
-  // }
-
   @override
   Widget build(BuildContext context) {
     final deviceSize = MediaQuery.of(context).size;
@@ -203,10 +217,8 @@ class _AuthCardState extends State<AuthCard> {
       ),
       elevation: 8.0,
       child: Container(
-        height: authProvider.currentAuthMode == AuthMode.Signup ? 320 : 260,
-        constraints: BoxConstraints(
-            minHeight:
-                authProvider.currentAuthMode == AuthMode.Signup ? 320 : 260),
+        height: _heightAnimation.value.height,
+        constraints: BoxConstraints(minHeight: _heightAnimation.value.height),
         width: deviceSize.width * 0.75,
         padding: EdgeInsets.all(16.0),
         child: Form(
@@ -274,10 +286,17 @@ class _AuthCardState extends State<AuthCard> {
                 FlatButton(
                   child: Text(
                       '${authProvider.currentAuthMode == AuthMode.Login ? 'SIGNUP' : 'LOGIN'} INSTEAD'),
-                  onPressed: () => authProvider.setAuthMode(
-                      authProvider.currentAuthMode == AuthMode.Login
-                          ? AuthMode.Signup
-                          : AuthMode.Login),
+                  onPressed: () {
+                    authProvider.setAuthMode(
+                        authProvider.currentAuthMode == AuthMode.Login
+                            ? AuthMode.Signup
+                            : AuthMode.Login);
+                    if (authProvider.currentAuthMode == AuthMode.Login) {
+                      _controller.reverse();
+                    } else {
+                      _controller.forward();
+                    }
+                  },
                   padding: EdgeInsets.symmetric(horizontal: 30.0, vertical: 4),
                   materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                   textColor: Theme.of(context).primaryColor,
