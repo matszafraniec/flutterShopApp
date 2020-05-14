@@ -13,31 +13,31 @@ class AuthScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final deviceSize = MediaQuery.of(context).size;
+    final authProvider = Provider.of<Auth>(context, listen: false);
+    print('auth build');
 
     return Scaffold(
       body: Stack(
         children: <Widget>[
-          Consumer<Auth>(
-            builder: (context, authData, _) => Container(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [
-                    Color.fromRGBO(
-                            authData.currentAuthMode == AuthMode.Login
-                                ? 215
-                                : 50,
-                            authData.currentAuthMode == AuthMode.Login
-                                ? 117
-                                : 188,
-                            255,
-                            1)
-                        .withOpacity(0.75),
-                    Color.fromRGBO(250, 188, 117, 1).withOpacity(0.99),
-                  ],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  stops: [0, 1],
-                ),
+          Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  Color.fromRGBO(
+                          authProvider.currentAuthMode == AuthMode.Login
+                              ? 215
+                              : 50,
+                          authProvider.currentAuthMode == AuthMode.Login
+                              ? 117
+                              : 188,
+                          255,
+                          1)
+                      .withOpacity(0.75),
+                  Color.fromRGBO(250, 188, 117, 1).withOpacity(0.99),
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                stops: [0, 1],
               ),
             ),
           ),
@@ -94,9 +94,7 @@ class AuthScreen extends StatelessWidget {
 }
 
 class AuthCard extends StatefulWidget {
-  const AuthCard({
-    Key key,
-  }) : super(key: key);
+  AuthCard({Key key}) : super(key: key);
 
   @override
   _AuthCardState createState() => _AuthCardState();
@@ -111,29 +109,36 @@ class _AuthCardState extends State<AuthCard>
   };
   var _isLoading = false;
   final _passwordController = TextEditingController();
-  //AnimationController _controller;
-  //Animation<Size> _heightAnimation;
+  //Auth _auth;
+  AnimationController _controller;
+  Animation<double> _opacityAnimation;
+  Animation<Offset> _slideAnimation;
 
   @override
   void initState() {
     super.initState();
-
-    // _controller = AnimationController(
-    //   vsync: this,
-    //   duration: Duration(milliseconds: 300),
-    // );
-    // _heightAnimation = Tween<Size>(
-    //         begin: Size(double.infinity, 260), end: Size(double.infinity, 360))
-    //     .animate(CurvedAnimation(
-    //   parent: _controller,
-    //   curve: Curves.linear,
-    // ));
+    //_auth = Provider.of<Auth>(context, listen: false);
+    _controller = AnimationController(
+      vsync: this,
+      duration: Duration(milliseconds: 300),
+    );
+    _slideAnimation = Tween<Offset>(begin: Offset(0, -1.2), end: Offset(0, 0))
+        .animate(CurvedAnimation(
+      parent: _controller,
+      curve: Curves.linear,
+    ));
+    _opacityAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(
+        parent: _controller,
+        curve: Curves.easeIn,
+      ),
+    );
   }
 
   @override
   void dispose() {
     super.dispose();
-    //_controller.dispose();
+    _controller.dispose();
   }
 
   void _showErrorDialog(String message) {
@@ -219,8 +224,9 @@ class _AuthCardState extends State<AuthCard>
         curve: Curves.easeIn,
         height: authProvider.currentAuthMode == AuthMode.Signup ? 320 : 260,
         constraints: BoxConstraints(
-            minHeight:
-                authProvider.currentAuthMode == AuthMode.Signup ? 320 : 260),
+          minHeight:
+              authProvider.currentAuthMode == AuthMode.Signup ? 320 : 260,
+        ),
         width: deviceSize.width * 0.75,
         padding: EdgeInsets.all(16.0),
         child: Form(
@@ -253,19 +259,38 @@ class _AuthCardState extends State<AuthCard>
                     _authData['password'] = value;
                   },
                 ),
-                if (authProvider.currentAuthMode == AuthMode.Signup)
-                  TextFormField(
-                    enabled: authProvider.currentAuthMode == AuthMode.Signup,
-                    decoration: InputDecoration(labelText: 'Confirm Password'),
-                    obscureText: true,
-                    validator: authProvider.currentAuthMode == AuthMode.Signup
-                        ? (value) {
-                            if (value != _passwordController.text) {
-                              return 'Passwords do not match!';
-                            }
-                          }
-                        : null,
+                AnimatedContainer(
+                  constraints: BoxConstraints(
+                      minHeight: authProvider.currentAuthMode == AuthMode.Signup
+                          ? 60
+                          : 0,
+                      maxHeight: authProvider.currentAuthMode == AuthMode.Signup
+                          ? 120
+                          : 0),
+                  duration: Duration(milliseconds: 300),
+                  curve: Curves.easeIn,
+                  child: FadeTransition(
+                    opacity: _opacityAnimation,
+                    child: SlideTransition(
+                      position: _slideAnimation,
+                      child: TextFormField(
+                        enabled:
+                            authProvider.currentAuthMode == AuthMode.Signup,
+                        decoration:
+                            InputDecoration(labelText: 'Confirm Password'),
+                        obscureText: true,
+                        validator:
+                            authProvider.currentAuthMode == AuthMode.Signup
+                                ? (value) {
+                                    if (value != _passwordController.text) {
+                                      return 'Passwords do not match!';
+                                    }
+                                  }
+                                : null,
+                      ),
+                    ),
                   ),
+                ),
                 SizedBox(
                   height: 20,
                 ),
@@ -293,11 +318,11 @@ class _AuthCardState extends State<AuthCard>
                         authProvider.currentAuthMode == AuthMode.Login
                             ? AuthMode.Signup
                             : AuthMode.Login);
-                    // if (authProvider.currentAuthMode == AuthMode.Login) {
-                    //   _controller.reverse();
-                    // } else {
-                    //   _controller.forward();
-                    // }
+                    if (authProvider.currentAuthMode == AuthMode.Login) {
+                      _controller.reverse();
+                    } else {
+                      _controller.forward();
+                    }
                   },
                   padding: EdgeInsets.symmetric(horizontal: 30.0, vertical: 4),
                   materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
