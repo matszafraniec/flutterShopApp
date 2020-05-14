@@ -5,7 +5,10 @@ class SplashScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       body: Center(
-        child: Text('Loading...'),
+        child: CircularProgressIndicator(
+          value: 100,
+          backgroundColor: Colors.green,
+        ),
       ),
     );
   }
