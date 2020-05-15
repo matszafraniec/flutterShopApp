@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../providers/auth.dart';
 import '../screens/user_products_screen.dart';
 import '../screens/orders_screen.dart';
+import '../helpers/custom_route.dart';
 
 class MainDrawer extends StatelessWidget {
   @override
@@ -30,6 +31,11 @@ class MainDrawer extends StatelessWidget {
             onTap: () {
               Navigator.of(context)
                   .pushReplacementNamed(OrdersScreen.routeName);
+
+              // Custom route example
+              // Navigator.of(context).pushReplacement(CustomRoute(
+              //   builder: (ctx) => OrdersScreen(),
+              // ));
             },
           ),
           Divider(),

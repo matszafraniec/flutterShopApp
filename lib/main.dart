@@ -14,6 +14,7 @@ import './providers/cart.dart';
 import './providers/products.dart';
 import './providers/orders.dart';
 import './providers/auth.dart';
+import './helpers/custom_route.dart';
 
 void main() => runApp(MyApp());
 
@@ -50,6 +51,12 @@ class MyApp extends StatelessWidget {
             primarySwatch: Colors.purple,
             accentColor: Colors.orange,
             fontFamily: 'Lato',
+            pageTransitionsTheme: PageTransitionsTheme(
+              builders: {
+                TargetPlatform.android: CustomPageTransitionBuilder(),
+                TargetPlatform.iOS: CustomPageTransitionBuilder(),
+              },
+            ),
           ),
           home: authData.isAuth
               ? ProductsOverviewScreen()
@@ -57,7 +64,8 @@ class MyApp extends StatelessWidget {
                   future: authData.tryAutoLogin(),
                   builder: (ctx, authResultSnapshot) =>
                       authResultSnapshot.connectionState ==
-                              ConnectionState.waiting && !authData.appRan
+                                  ConnectionState.waiting &&
+                              !authData.appRan
                           ? SplashScreen()
                           : AuthScreen()),
           routes: {
